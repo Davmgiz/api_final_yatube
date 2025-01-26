@@ -1,10 +1,10 @@
+from rest_framework import serializers
 from rest_framework import generics, permissions
 from rest_framework.response import Response
-from posts.models import Post, Comment, Group, Follow
-from django.contrib.auth import get_user_model
-from .pagination import CustomPagination
 from rest_framework.views import APIView
 from rest_framework import status
+from django.contrib.auth import get_user_model
+from .pagination import CustomPagination
 from rest_framework_simplejwt.authentication import JWTAuthentication
 from .serializers import (
     PostSerializer,
@@ -12,7 +12,11 @@ from .serializers import (
     GroupSerializer,
     FollowSerializer,
 )
-from rest_framework import serializers
+from posts.models import (Post,
+                          Comment,
+                          Group,
+                          Follow
+                          )
 
 User = get_user_model()
 
@@ -29,7 +33,9 @@ class PostHandlerView(generics.ListCreateAPIView):
         if group_id:
             group = Group.objects.filter(pk=group_id).first()
             if not group:
-                raise serializers.ValidationError({"group": "Specified group does not exist."})
+                raise serializers.ValidationError(
+                    {"group": "Specified group does not exist."}
+                )
         else:
             group = None
         serializer.save(author=self.request.user, group=group)
@@ -72,7 +78,9 @@ class CommentHandlerView(generics.ListCreateAPIView):
     def perform_create(self, serializer):
         post = Post.objects.filter(pk=self.kwargs["post_id"]).first()
         if not post:
-            raise serializers.ValidationError({"detail": "The specified post does not exist."})
+            raise serializers.ValidationError(
+                {"detail": "The specified post does not exist."}
+            )
         serializer.save(author=self.request.user, post=post)
 
 
@@ -82,7 +90,8 @@ class SingleCommentManagerView(generics.RetrieveUpdateDestroyAPIView):
     authentication_classes = [JWTAuthentication]
 
     def get_queryset(self):
-        return Comment.objects.filter(post_id=self.kwargs["post_id"], pk=self.kwargs["pk"])
+        return Comment.objects.filter(post_id=self.kwargs["post_id"],
+                                      pk=self.kwargs["pk"])
 
     def update(self, request, *args, **kwargs):
         comment = self.get_object()
@@ -124,7 +133,9 @@ class FollowHandlerView(APIView):
         follows = Follow.objects.filter(user=request.user)
         search_query = request.query_params.get("search")
         if search_query:
-            follows = follows.filter(following__username__icontains=search_query)
+            follows = follows.filter(
+                following__username__icontains=search_query
+            )
         serializer = FollowSerializer(follows, many=True)
         return Response(serializer.data)
 
@@ -132,7 +143,8 @@ class FollowHandlerView(APIView):
         serializer = FollowSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         following_username = serializer.validated_data.get("following")
-        following_user = User.objects.filter(username=following_username).first()
+        following_user = User.objects.filter(username=following_username)
+        following_user = following_user.first()
 
         if not following_user:
             return Response(
@@ -146,13 +158,15 @@ class FollowHandlerView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if Follow.objects.filter(user=request.user, following=following_user).exists():
+        if Follow.objects.filter(user=request.user, following=following_user) \
+                .exists():
             return Response(
                 {"detail": "You are already following this user."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        follow_instance = Follow.objects.create(user=request.user, following=following_user)
+        follow_instance = Follow.objects.create(user=request.user,
+                                                following=following_user)
         return Response(
             FollowSerializer(follow_instance).data,
             status=status.HTTP_201_CREATED,

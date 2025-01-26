@@ -35,5 +35,5 @@ urlpatterns = [
     ),
     path("groups/", GroupOverviewView.as_view(), name="group-list"),
     path("groups/<int:pk>/", GroupDetailsView.as_view(), name="group-detail"),
-    
 ]
+
