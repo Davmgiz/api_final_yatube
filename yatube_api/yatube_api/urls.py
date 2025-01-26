@@ -18,7 +18,6 @@ urlpatterns = [
     path('api/v1/jwt/verify/',
          TokenVerifyView.as_view(),
          name='token_verify'),
-    
     path('admin/', admin.site.urls),
     path(
         'redoc/',
